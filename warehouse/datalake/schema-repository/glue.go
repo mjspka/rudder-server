@@ -1,6 +1,7 @@
 package schemarepository
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -115,7 +116,23 @@ func (gl *GlueSchemaRepository) CreateSchema() (err error) {
 }
 
 func (gl *GlueSchemaRepository) getPartitionKeys() []*glue.Column {
-	timeWindowFormat, _ := gl.Warehouse.Destination.Config["timeWindowFormat"].(string)
+	var timeWindowFormat string
+	partitionKeys, partitionKeysAvailable := gl.Warehouse.Destination.Config["partitionKeys"]
+	if partitionKeysAvailable {
+		partitionKeysString, _ := json.Marshal(partitionKeys)
+		var partitionKeysStringI []map[string]interface{}
+		err := json.Unmarshal(partitionKeysString, &partitionKeysStringI)
+		if err == nil {
+			// Assumes a single partition and partitions table
+			// TODO: support multiple partitions from config
+			key := partitionKeysStringI[0]["key"]
+			val := partitionKeysStringI[0]["value"]
+			if key != "" && val != "" {
+				timeWindowFormat = fmt.Sprintf("%v=%v", key, val)
+			}
+		}
+	}
+
 	if timeWindowFormat != "" {
 		// Assumes a well-formed partitioning format
 		columnName := strings.Split(timeWindowFormat, "=")[0]
