@@ -148,15 +148,6 @@ func (gl *GlueSchemaRepository) CreateTable(tableName string, columnMap map[stri
 	return
 }
 
-/*
-	take a fork from typeform partition-by -date
-	need to create my repo in rudderlabs
-	pr to typeform/partion from ruddrlabs/partition
-	===========================
-	clone
-	creating repo and pushing in typeform
-*/
-
 func (gl *GlueSchemaRepository) AddColumn(tableName string, columnName string, columnType string) (err error) {
 	updateTableInput := glue.UpdateTableInput{
 		DatabaseName: aws.String(gl.Namespace),
