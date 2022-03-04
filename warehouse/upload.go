@@ -404,9 +404,22 @@ func (job *UploadJobT) run() (err error) {
 			job.matchRowsInStagingAndLoadFiles()
 			job.recordLoadFileGenerationTimeStat(startLoadFileID, endLoadFileID)
 			if job.warehouse.Type == "S3_DATALAKE" {
-				timeWindowFormatI, timeWindowFormatAvailable := job.warehouse.Destination.Config["timeWindowFormat"]
-				if timeWindowFormatAvailable {
-					timeWindowFormat, _ := timeWindowFormatI.(string)
+				var timeWindowFormat string
+				partitionKeys, partitionKeysAvailable := job.warehouse.Destination.Config["partitionKeys"]
+				if partitionKeysAvailable {
+					partitionKeysString, _ := json.Marshal(partitionKeys)
+					var partitionKeysStringI []map[string]interface{}
+					err := json.Unmarshal(partitionKeysString, &partitionKeysStringI)
+					if err == nil {
+						key := partitionKeysStringI[0]["key"]
+						val := partitionKeysStringI[0]["value"]
+						if key != "" && val != "" {
+							timeWindowFormat = fmt.Sprintf("%v=%v", key, val)
+						}
+					}
+				}
+
+				if timeWindowFormat != "" {
 					for tableName := range job.upload.UploadSchema {
 						loadFiles := job.GetLoadFilesMetadata(warehouseutils.GetLoadFilesOptionsT{
 							Table:   tableName,
@@ -415,7 +428,7 @@ func (job *UploadJobT) run() (err error) {
 						})
 						// This is best done every 100 files, since it's a batch request for updates in Glue
 						partitionBatchSize := 99
-						for i := 0; i < len(loadFiles) && timeWindowFormat != ""; i += partitionBatchSize {
+						for i := 0; i < len(loadFiles); i += partitionBatchSize {
 							end := i + partitionBatchSize
 
 							if end > len(loadFiles) {
@@ -1672,7 +1685,22 @@ func (job *UploadJobT) createLoadFiles(generateAll bool) (startLoadFileID int64,
 			}
 
 			if job.warehouse.Type == "S3_DATALAKE" {
-				timeWindowFormat, _ := job.warehouse.Destination.Config["timeWindowFormat"].(string)
+				var timeWindowFormat string
+				partitionKeys, partitionKeysAvailable := job.warehouse.Destination.Config["partitionKeys"]
+				if partitionKeysAvailable {
+					partitionKeysString, _ := json.Marshal(partitionKeys)
+					var partitionKeysStringI []map[string]interface{}
+					err := json.Unmarshal(partitionKeysString, &partitionKeysStringI)
+					if err == nil {
+						// Assumes a single partition and adds prefix
+						// TODO: support multiple partitions from config and respective load file prefix
+						key := partitionKeysStringI[0]["key"]
+						val := partitionKeysStringI[0]["value"]
+						if key != "" && val != "" {
+							timeWindowFormat = fmt.Sprintf("%v=%v", key, val)
+						}
+					}
+				}
 				if timeWindowFormat != "" {
 					payload.LoadFilePrefix = stagingFile.TimeWindow.Format(timeWindowFormat)
 				}
