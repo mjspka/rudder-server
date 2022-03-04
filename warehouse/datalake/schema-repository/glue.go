@@ -1,7 +1,6 @@
 package schemarepository
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -116,22 +115,7 @@ func (gl *GlueSchemaRepository) CreateSchema() (err error) {
 }
 
 func (gl *GlueSchemaRepository) getPartitionKeys() []*glue.Column {
-	var timeWindowFormat string
-	partitionKeys, partitionKeysAvailable := gl.Warehouse.Destination.Config["partitionKeys"]
-	if partitionKeysAvailable {
-		partitionKeysString, _ := json.Marshal(partitionKeys)
-		var partitionKeysStringI []map[string]interface{}
-		err := json.Unmarshal(partitionKeysString, &partitionKeysStringI)
-		if err == nil {
-			// Assumes a single partition and partitions table
-			// TODO: support multiple partitions from config
-			key := partitionKeysStringI[0]["key"]
-			val := partitionKeysStringI[0]["value"]
-			if key != "" && val != "" {
-				timeWindowFormat = fmt.Sprintf("%v=%v", key, val)
-			}
-		}
-	}
+	timeWindowFormat := warehouseutils.GetTimeWindowFormat(gl.Warehouse.Destination.Config)
 
 	if timeWindowFormat != "" {
 		// Assumes a well-formed partitioning format
@@ -163,6 +147,15 @@ func (gl *GlueSchemaRepository) CreateTable(tableName string, columnMap map[stri
 	}
 	return
 }
+
+/*
+	take a fork from typeform partition-by -date
+	need to create my repo in rudderlabs
+	pr to typeform/partion from ruddrlabs/partition
+	===========================
+	clone
+	creating repo and pushing in typeform
+*/
 
 func (gl *GlueSchemaRepository) AddColumn(tableName string, columnName string, columnType string) (err error) {
 	updateTableInput := glue.UpdateTableInput{

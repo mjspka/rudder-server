@@ -844,3 +844,22 @@ func GetSSLKeyDirPath(destinationID string) (whSSLRootDir string) {
 	sslDirPath := fmt.Sprintf("%s/dest-ssls/%s", directoryName, destinationID)
 	return sslDirPath
 }
+
+func GetTimeWindowFormat(config map[string]interface{}) (timeWindowFormat string) {
+	partitionKeys, partitionKeysAvailable := config["partitionKeys"]
+	if partitionKeysAvailable {
+		partitionKeysString, _ := json.Marshal(partitionKeys)
+		var partitionKeysStringI []map[string]interface{}
+		err := json.Unmarshal(partitionKeysString, &partitionKeysStringI)
+		if err == nil {
+			// Assumes a single partition and adds prefix
+			// TODO: support multiple partitions from config and respective load file prefix
+			key := partitionKeysStringI[0]["key"]
+			val := partitionKeysStringI[0]["value"]
+			if key != "" && val != "" {
+				timeWindowFormat = fmt.Sprintf("%v=%v", key, val)
+			}
+		}
+	}
+	return
+}

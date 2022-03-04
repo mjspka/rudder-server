@@ -404,21 +404,7 @@ func (job *UploadJobT) run() (err error) {
 			job.matchRowsInStagingAndLoadFiles()
 			job.recordLoadFileGenerationTimeStat(startLoadFileID, endLoadFileID)
 			if job.warehouse.Type == "S3_DATALAKE" {
-				var timeWindowFormat string
-				partitionKeys, partitionKeysAvailable := job.warehouse.Destination.Config["partitionKeys"]
-				if partitionKeysAvailable {
-					partitionKeysString, _ := json.Marshal(partitionKeys)
-					var partitionKeysStringI []map[string]interface{}
-					err := json.Unmarshal(partitionKeysString, &partitionKeysStringI)
-					if err == nil {
-						key := partitionKeysStringI[0]["key"]
-						val := partitionKeysStringI[0]["value"]
-						if key != "" && val != "" {
-							timeWindowFormat = fmt.Sprintf("%v=%v", key, val)
-						}
-					}
-				}
-
+				timeWindowFormat := warehouseutils.GetTimeWindowFormat(job.warehouse.Destination.Config)
 				if timeWindowFormat != "" {
 					for tableName := range job.upload.UploadSchema {
 						loadFiles := job.GetLoadFilesMetadata(warehouseutils.GetLoadFilesOptionsT{
@@ -1685,22 +1671,7 @@ func (job *UploadJobT) createLoadFiles(generateAll bool) (startLoadFileID int64,
 			}
 
 			if job.warehouse.Type == "S3_DATALAKE" {
-				var timeWindowFormat string
-				partitionKeys, partitionKeysAvailable := job.warehouse.Destination.Config["partitionKeys"]
-				if partitionKeysAvailable {
-					partitionKeysString, _ := json.Marshal(partitionKeys)
-					var partitionKeysStringI []map[string]interface{}
-					err := json.Unmarshal(partitionKeysString, &partitionKeysStringI)
-					if err == nil {
-						// Assumes a single partition and adds prefix
-						// TODO: support multiple partitions from config and respective load file prefix
-						key := partitionKeysStringI[0]["key"]
-						val := partitionKeysStringI[0]["value"]
-						if key != "" && val != "" {
-							timeWindowFormat = fmt.Sprintf("%v=%v", key, val)
-						}
-					}
-				}
+				timeWindowFormat := warehouseutils.GetTimeWindowFormat(job.warehouse.Destination.Config)
 				if timeWindowFormat != "" {
 					payload.LoadFilePrefix = stagingFile.TimeWindow.Format(timeWindowFormat)
 				}
