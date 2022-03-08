@@ -855,7 +855,6 @@ func GetPartitionKeysFromConfig(config map[string]interface{}) (partitionKeys []
 			pkgLogger.Errorf("Error extracting partition keys from destination config %v", err)
 		}
 	}
-	pkgLogger.Infof("warehouse call: %v", partitionKeys)
 	return
 }
 
