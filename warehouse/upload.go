@@ -404,7 +404,7 @@ func (job *UploadJobT) run() (err error) {
 			job.matchRowsInStagingAndLoadFiles()
 			job.recordLoadFileGenerationTimeStat(startLoadFileID, endLoadFileID)
 			if job.warehouse.Type == "S3_DATALAKE" {
-				timeWindowFormat := warehouseutils.GetTimeWindowFormat(job.warehouse.Destination.Config)
+				timeWindowFormat := warehouseutils.GetTimeWindowFormat(job.warehouse.DestPartitionKeys)
 				if timeWindowFormat != "" {
 					for tableName := range job.upload.UploadSchema {
 						loadFiles := job.GetLoadFilesMetadata(warehouseutils.GetLoadFilesOptionsT{
@@ -1671,7 +1671,7 @@ func (job *UploadJobT) createLoadFiles(generateAll bool) (startLoadFileID int64,
 			}
 
 			if job.warehouse.Type == "S3_DATALAKE" {
-				timeWindowFormat := warehouseutils.GetTimeWindowFormat(job.warehouse.Destination.Config)
+				timeWindowFormat := warehouseutils.GetTimeWindowFormat(job.warehouse.DestPartitionKeys)
 				if timeWindowFormat != "" {
 					payload.LoadFilePrefix = stagingFile.TimeWindow.Format(timeWindowFormat)
 				}

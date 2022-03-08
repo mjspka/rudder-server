@@ -133,11 +133,12 @@ func loadConfig() {
 }
 
 type WarehouseT struct {
-	Source      backendconfig.SourceT
-	Destination backendconfig.DestinationT
-	Namespace   string
-	Type        string
-	Identifier  string
+	Source            backendconfig.SourceT
+	Destination       backendconfig.DestinationT
+	Namespace         string
+	Type              string
+	Identifier        string
+	DestPartitionKeys []map[string]string
 }
 
 type DestinationT struct {
@@ -845,20 +846,28 @@ func GetSSLKeyDirPath(destinationID string) (whSSLRootDir string) {
 	return sslDirPath
 }
 
-func GetTimeWindowFormat(config map[string]interface{}) (timeWindowFormat string) {
-	partitionKeys, partitionKeysAvailable := config["partitionKeys"]
-	if partitionKeysAvailable {
-		partitionKeysString, _ := json.Marshal(partitionKeys)
-		var partitionKeysStringI []map[string]interface{}
-		err := json.Unmarshal(partitionKeysString, &partitionKeysStringI)
-		if err == nil {
-			// Assumes a single partition and adds prefix
-			// TODO: support multiple partitions from config and respective load file prefix
-			key := partitionKeysStringI[0]["key"]
-			val := partitionKeysStringI[0]["value"]
-			if key != "" && val != "" {
-				timeWindowFormat = fmt.Sprintf("%v=%v", key, val)
-			}
+func GetPartitionKeysFromConfig(config map[string]interface{}) (partitionKeys []map[string]string) {
+	partitionKeysI, partitionKeysIAvailable := config["partitionKeys"]
+	if partitionKeysIAvailable {
+		partitionKeysString, _ := json.Marshal(partitionKeysI)
+		err := json.Unmarshal(partitionKeysString, &partitionKeys)
+		if err != nil {
+			pkgLogger.Errorf("Error extracting partition keys from destination config %v", err)
+		}
+	}
+	pkgLogger.Infof("warehouse call: %v", partitionKeys)
+	return
+}
+
+func GetTimeWindowFormat(partitionKeys []map[string]string) (timeWindowFormat string) {
+	// supports only single partition
+	// TODO: extend to allow multiple partition keys on table
+	if len(partitionKeys) > 0 {
+		partitionPair := partitionKeys[0]
+		key := partitionPair["key"]
+		val := partitionPair["value"]
+		if key != "" && val != "" {
+			timeWindowFormat = fmt.Sprintf("%v=%v", key, val)
 		}
 	}
 	return
