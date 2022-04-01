@@ -2,8 +2,7 @@ package backendconfig
 
 import (
 	"fmt"
-	"io"
-	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -122,26 +121,6 @@ func (multiWorkspaceConfig *MultiWorkspaceConfig) Get(workspaceArr string) (Conf
 }
 
 func (multiWorkspaceConfig *MultiWorkspaceConfig) makeHTTPRequest(url string) ([]byte, int, error) {
-	req, err := Http.NewRequest("GET", url, nil)
-	if err != nil {
-		return []byte{}, 400, err
-	}
-
-	req.SetBasicAuth(multiWorkspaceSecret, "")
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return []byte{}, 400, err
-	}
-
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return []byte{}, 400, err
-	}
-
-	return respBody, resp.StatusCode, nil
+	respBody, err := os.ReadFile("/Users/aristzoumas/Desktop/config.json")
+	return respBody, 200, err
 }

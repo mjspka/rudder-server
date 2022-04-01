@@ -4,7 +4,6 @@ package backendconfig
 
 import (
 	"context"
-	"reflect"
 	"sort"
 	"sync"
 	"time"
@@ -299,7 +298,7 @@ func configUpdate(statConfigBackendError stats.RudderStats, workspaces string) {
 		return sourceJSON.Sources[i].ID < sourceJSON.Sources[j].ID
 	})
 
-	if ok && !reflect.DeepEqual(curSourceJSON, sourceJSON) {
+	if ok {
 		pkgLogger.Info("Workspace Config changed")
 		curSourceJSONLock.Lock()
 		trackConfig(curSourceJSON, sourceJSON)

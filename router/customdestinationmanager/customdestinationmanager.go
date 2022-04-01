@@ -17,6 +17,11 @@ import (
 	"github.com/rudderlabs/rudder-server/utils/misc"
 )
 
+var (
+	inprogressMutex sync.Mutex
+	inprogress      map[string]struct{} = map[string]struct{}{}
+)
+
 const (
 	STREAM              = "stream"
 	KV                  = "kv"
@@ -57,6 +62,18 @@ type CustomDestination struct {
 func Init() {
 	loadConfig()
 	pkgLogger = logger.NewLogger().Child("router").Child("customdestinationmanager")
+
+	go func() {
+		for {
+			select {
+			case <-time.After(10 * time.Second):
+				inprogressMutex.Lock()
+				pkgLogger.Info(fmt.Sprintf("%+v", inprogress))
+				inprogressMutex.Unlock()
+			}
+		}
+
+	}()
 }
 
 func loadConfig() {
@@ -271,6 +288,9 @@ func (customManager *CustomManagerT) backendConfigSubscriber() {
 	backendconfig.Subscribe(ch, "backendConfig")
 	for {
 		config := <-ch
+		inprogressMutex.Lock()
+		inprogress[customManager.destType] = struct{}{}
+		inprogressMutex.Unlock()
 		customManager.configSubscriberLock.Lock()
 		allSources := config.Data.(backendconfig.ConfigT)
 		for _, source := range allSources.Sources {
@@ -288,6 +308,9 @@ func (customManager *CustomManagerT) backendConfigSubscriber() {
 				}
 			}
 		}
+		inprogressMutex.Lock()
+		delete(inprogress, customManager.destType)
+		inprogressMutex.Unlock()
 		customManager.configSubscriberLock.Unlock()
 	}
 }

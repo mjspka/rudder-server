@@ -137,7 +137,7 @@ func NewProducer(destinationConfig interface{}, o Opts) (sarama.SyncProducer, er
 	if err != nil {
 		return nil, fmt.Errorf("[Kafka] Error while unmarshalling dest config :: %w", err)
 	}
-    hosts := make([]string, 0)
+	hosts := make([]string, 0)
 	hostNames := strings.Split(destConfig.HostName, ",")
 	for _, hostName := range hostNames {
 		hosts = append(hosts, hostName+":"+destConfig.Port)
@@ -165,9 +165,11 @@ func NewProducer(destinationConfig interface{}, o Opts) (sarama.SyncProducer, er
 		}
 	}
 
-	producer, err := sarama.NewSyncProducer(hosts, config)
+	// producer, err := sarama.NewSyncProducer(hosts, config)
 
-	return producer, err
+	// return producer, err
+	time.Sleep(100 * time.Millisecond)
+	return nil, fmt.Errorf("no kafka here!")
 }
 
 // Sets SASL authentication config for Kafka

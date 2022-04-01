@@ -4,7 +4,11 @@ package utils
 
 import (
 	"sync"
+
+	"github.com/rudderlabs/rudder-server/utils/logger"
 )
+
+var pkgLogger logger.LoggerI = logger.NewLogger().Child("pub-sub")
 
 type DataEvent struct {
 	Data  interface{}
@@ -35,14 +39,23 @@ func (eb *EventBus) Publish(topic string, data interface{}) {
 		// thus we are creating a new slice with our elements thus preserve locking correctly.
 		// special thanks for /u/freesid who pointed it out
 		channels := append(DataChannelSlice{}, chans...)
+		var wg sync.WaitGroup
+		i := len(channels)
+		wg.Add(len(channels))
+		pkgLogger.Info("[aoom] Waiting for ", len(channels), " in topic ", topic)
 		go func(data DataEvent, dataChannelSlices DataChannelSlice) {
 			for _, ch := range dataChannelSlices {
 				//Publishing to channels in separate goroutines
 				go func(ch DataChannel, data DataEvent) {
 					ch <- data
+					wg.Done()
+					i--
+					pkgLogger.Info("[aoom] channels left in topic ", topic, " is ", i)
 				}(ch, data)
 			}
 		}(DataEvent{Data: data, Topic: topic}, channels)
+		wg.Wait()
+		pkgLogger.Info("[aoom] Completed publishing to topic ", topic)
 	}
 	eb.rm.RUnlock()
 }
