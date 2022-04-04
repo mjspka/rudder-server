@@ -2322,6 +2322,7 @@ func (jd *HandleT) getProcessedJobsDS(ds dataSetT, getAll bool, limitCount int, 
 		}
 
 		stmt, err := jd.dbHandle.Prepare(sqlStatement)
+		jd.logger.Info(sqlStatement)
 		jd.assertError(err)
 		defer stmt.Close()
 		rows, err = stmt.Query(args...)
@@ -2537,6 +2538,15 @@ func (jd *HandleT) updateJobStatusDSInTxn(txHandler transactionHandler, ds dataS
 		return
 	}
 
+	// analyze ds to update statistics(to help with select)
+	analyzeStmt, err := txHandler.Prepare(fmt.Sprintf(`analyze "%s", "%s";`, ds.JobTable, ds.JobStatusTable))
+	if err != nil {
+		return
+	}
+	_, err = analyzeStmt.Exec()
+	if err != nil {
+		return
+	}
 	return
 }
 

@@ -350,7 +350,7 @@ func (brt *HandleT) pollAsyncStatus(ctx context.Context) {
 									for _, job := range importingList {
 										status := jobsdb.JobStatusT{
 											JobID:         job.JobID,
-											JobState:      jobsdb.Succeeded.State,
+											JobState:      jobsdb.Failed.State,
 											ExecTime:      time.Now(),
 											RetryTime:     time.Now(),
 											ErrorCode:     "",
@@ -1051,7 +1051,7 @@ func (brt *HandleT) setJobStatus(batchJobs *BatchJobsT, isWarehouse bool, errOcc
 		case errors.Is(errOccurred, rterror.DisabledEgress):
 			brt.logger.Debugf("BRT: Outgoing traffic disabled : %v at %v", batchJobs.BatchDestination.Source.ID,
 				time.Now().Format("01-02-2006"))
-			batchJobState = jobsdb.Succeeded.State
+			batchJobState = jobsdb.Failed.State
 			errorResp = []byte(fmt.Sprintf(`{"success":"%s"}`, errOccurred.Error()))
 		case errors.Is(errOccurred, rterror.InvalidServiceProvider):
 			brt.logger.Warnf("BRT: Destination %s : %s for destination ID : %v at %v",
@@ -1068,7 +1068,7 @@ func (brt *HandleT) setJobStatus(batchJobs *BatchJobsT, isWarehouse bool, errOcc
 		}
 	} else {
 		brt.logger.Debugf("BRT: Uploaded to object storage : %v at %v", batchJobs.BatchDestination.Source.ID, time.Now().Format("01-02-2006"))
-		batchJobState = jobsdb.Succeeded.State
+		batchJobState = jobsdb.Failed.State
 		errorResp = []byte(`{"success":"OK"}`)
 		batchReqMetric.batchRequestSuccess = 1
 	}
@@ -1315,10 +1315,10 @@ func (brt *HandleT) setMultipleJobStatus(asyncOutput asyncdestinationmanager.Asy
 		for _, jobId := range asyncOutput.FailedJobIDs {
 			status := jobsdb.JobStatusT{
 				JobID:         jobId,
-				JobState:      jobsdb.Succeeded.State,
+				JobState:      jobsdb.Failed.State,
 				ExecTime:      time.Now(),
 				RetryTime:     time.Now(),
-				ErrorCode:     "200",
+				ErrorCode:     "500",
 				ErrorResponse: json.RawMessage(asyncOutput.SuccessResponse),
 				Parameters:    []byte(`{}`),
 				WorkspaceId:   workspace,
