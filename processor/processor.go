@@ -601,6 +601,7 @@ func (proc *HandleT) backendConfigSubscriber() {
 			}
 		}
 		configSubscriberLock.Unlock()
+		config.Wait.Done()
 	}
 }
 

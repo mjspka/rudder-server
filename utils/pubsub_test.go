@@ -138,6 +138,7 @@ func (r *testConsumer) subscribe(topic string, bus *EventBus) {
 				})
 				res := v.Data.(int)
 				r.out <- res
+				v.Wait.Done()
 			}
 		}
 	}()

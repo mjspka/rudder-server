@@ -39,8 +39,8 @@ var uploader debugger.UploaderI
 var (
 	configBackendURL    string
 	disableEventUploads bool
-	pkgLogger      logger.LoggerI
-	eventsCacheMap debugger.Cache
+	pkgLogger           logger.LoggerI
+	eventsCacheMap      debugger.Cache
 )
 
 func Init() {
@@ -177,5 +177,6 @@ func backendConfigSubscriber(backendConfig backendconfig.BackendConfig) {
 	for {
 		config := <-configChannel
 		updateConfig(config.Data.(backendconfig.ConfigT))
+		config.Wait.Done()
 	}
 }

@@ -214,6 +214,7 @@ func (brt *HandleT) backendConfigSubscriber() {
 			brt.backendConfigInitialized <- true
 		}
 		brt.configSubscriberLock.Unlock()
+		config.Wait.Done()
 	}
 }
 

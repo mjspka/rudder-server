@@ -2246,6 +2246,7 @@ func (rt *HandleT) backendConfigSubscriber() {
 			rt.backendConfigInitialized <- true
 		}
 		rt.configSubscriberLock.Unlock()
+		config.Wait.Done()
 	}
 }
 

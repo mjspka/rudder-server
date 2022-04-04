@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+
 	backendconfig "github.com/rudderlabs/rudder-server/config/backend-config"
 	"github.com/rudderlabs/rudder-server/jobsdb"
 	"github.com/rudderlabs/rudder-server/router"
@@ -152,6 +153,7 @@ loop:
 			if brm != nil && err == nil {
 				brm.SetBatchRoutersReady()
 			}
+			config.Wait.Done()
 		}
 	}
 

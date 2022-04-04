@@ -1514,6 +1514,7 @@ func (gateway *HandleT) backendConfigSubscriber() {
 			}
 		}
 		configSubscriberLock.Unlock()
+		config.Wait.Done()
 	}
 }
 

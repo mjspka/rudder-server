@@ -9,6 +9,7 @@ import (
 type DataEvent struct {
 	Data  interface{}
 	Topic string
+	Wait  *sync.WaitGroup
 }
 
 // DataChannel is a channel which can accept an DataEvent
@@ -42,7 +43,7 @@ func (eb *EventBus) Publish(topic string, data interface{}) {
 
 	if publishers, found := eb.subscribers[topic]; found {
 		for _, publisher := range publishers {
-			publisher.publish(evt)
+			publisher.publish(*evt)
 		}
 	}
 
@@ -64,7 +65,7 @@ func (eb *EventBus) Subscribe(topic string, ch DataChannel) {
 		eb.subscribers[topic] = publisherSlice{p}
 	}
 	if eb.lastEvent[topic] != nil {
-		p.publish(eb.lastEvent[topic])
+		p.publish(*eb.lastEvent[topic])
 	}
 }
 
@@ -79,7 +80,7 @@ type publisher struct {
 	started     bool
 }
 
-func (r *publisher) publish(data *DataEvent) {
+func (r *publisher) publish(data DataEvent) {
 
 	r.lastValueLock.Lock()
 	defer r.lastValueLock.Unlock()
@@ -90,7 +91,7 @@ func (r *publisher) publish(data *DataEvent) {
 	if r.lastValue != nil {
 		// TODO: log a warning about slow consumer
 	}
-	r.lastValue = data
+	r.lastValue = &data
 
 	// start publish loop if not started
 	if !r.started {
@@ -104,9 +105,13 @@ func (r *publisher) startLoop() {
 	for r.lastValue != nil {
 		r.lastValueLock.Lock()
 		v := *r.lastValue
+		var wg sync.WaitGroup
+		v.Wait = &wg
 		r.lastValue = nil
 		r.lastValueLock.Unlock()
+		wg.Add(1)
 		r.channel <- v
+		// wg.Wait()
 	}
 	r.startedLock.Lock()
 	r.started = false

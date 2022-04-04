@@ -3,13 +3,14 @@ package destinationdebugger
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
+
 	"github.com/rudderlabs/rudder-server/config"
 	backendconfig "github.com/rudderlabs/rudder-server/config/backend-config"
 	"github.com/rudderlabs/rudder-server/rruntime"
 	"github.com/rudderlabs/rudder-server/services/debugger"
 	"github.com/rudderlabs/rudder-server/utils"
 	"github.com/rudderlabs/rudder-server/utils/logger"
-	"sync"
 )
 
 //DeliveryStatusT is a structure to hold everything related to event delivery
@@ -140,6 +141,7 @@ func backendConfigSubscriber(backendConfig backendconfig.BackendConfig) {
 	backendConfig.Subscribe(configChannel, "backendConfig")
 	for config := range configChannel {
 		updateConfig(config.Data.(backendconfig.ConfigT))
+		config.Wait.Done()
 	}
 }
 
