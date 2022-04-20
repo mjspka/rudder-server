@@ -2,47 +2,47 @@ version: "3.7"
 
 services:
   db:
-    image: postgres:11-alpine
+    image: postgres:14.1-alpine
     environment:
-      - POSTGRES_USER=rudder
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=jobsdb
     ports:
       - "6432:5432"
+    # volumes:
+    #   - db:/var/lib/postgresql/data
+  d-transformer:
+    image: rudderlabs/rudder-transformer:latest
+    ports:
+      - "9090:9090"
   backend:
     depends_on:
       - db
       - d-transformer
-    image: rudderlabs/rudder-server:1-alpine
+    image: rudderlabs/rudder-server
     entrypoint: sh -c '/wait-for db:5432 -- /rudder-server'
     ports:
-      - "8080:8080"
+      - "8085:8080"
     environment:
       - JOBS_DB_HOST=db
-      - JOBS_DB_USER=rudder
+      - JOBS_DB_USER=postgres
       - JOBS_DB_PORT=5432
       - JOBS_DB_DB_NAME=jobsdb
-      - JOBS_DB_PASSWORD=password
+      - JOBS_DB_PASSWORD=postgres
+      - RUDDER_ADMIN_PASSWORD=password
       - DEST_TRANSFORM_URL=http://d-transformer:9090
       - CONFIG_BACKEND_URL=https://api.rudderlabs.com
-      - WORKSPACE_TOKEN=<your_workspace_token>
+      - WORKSPACE_TOKEN=27icfq9IgHlucrhGJ1K6d51NyD6
       # - RSERVER_BACKEND_CONFIG_CONFIG_FROM_FILE=true
       # - RSERVER_BACKEND_CONFIG_CONFIG_JSONPATH=<workspace_config_filepath_in_container> # For ex., /etc/rudderstack/workspaceConfig.json
     # Uncomment the following lines to mount workspaceConfig file
     # volumes:
     #   - <absolute_path_to_workspace_config>:<workspace_config_filepath_in_container> # Value for <workspace_config_filepath_in_container> should be same as the value provided for RSERVER_BACKEND_CONFIG_CONFIG_JSONPATH
-  d-transformer:
-    image: rudderlabs/rudder-transformer:latest
-    ports:
-      - "9090:9090"
   # minio:
   #   image: minio/minio
   #   ports:
   #     - "9000:9000"
   #   command: server /data
-
-
-
-
-
-  
+  # volumes:
+  #   db:
+  #     driver: local

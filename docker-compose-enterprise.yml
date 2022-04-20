@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   db:
-    image: postgres:11-alpine
+    image: postgres:14.1-alpine
     env_file:
       - build/docker.env
     ports:
@@ -14,17 +14,18 @@ services:
     depends_on:
       - db
       - d-transformer
-      # - grafana
+      - grafana
     build:
       context: ./
       dockerfile: build/Dockerfile
     entrypoint: sh -c './build/wait-for db:5432 -- go run main.go'
     ports:
-      - "8080:8080"
+      - "8085:8080"
     env_file:
       - build/docker.env
     environment:
       - JOBS_DB_HOST=db
+      - RUDDER_ADMIN_PASSWORD=password
   d-transformer:
     build:
       context: ./rudder-transformer/
@@ -33,7 +34,7 @@ services:
       - "9090:9090"
   grafana:
     build:
-      context: ../rudder-ops
+      context: ./rudder-ops/
       dockerfile: Dockerfile
       args:
         - DATA_SOURCE=influxdb

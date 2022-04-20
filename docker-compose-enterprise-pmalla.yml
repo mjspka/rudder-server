@@ -1,0 +1,90 @@
+version: "3.7"
+
+services:
+  db:
+    image: postgres:14.1-alpine
+    env_file:
+      - build/docker.env
+    ports:
+      - "6432:5432"
+    logging:
+      driver: none
+  backend:
+    depends_on:
+      - db
+      - d-transformer
+      - grafana
+    image: rudderlabs/rudder-server
+    entrypoint: sh -c '/wait-for db:5432 -- /rudder-server'
+    ports:
+      - "8085:8080"
+    env_file:
+      - build/docker.env
+    environment:
+      - JOBS_DB_HOST=db
+      - RUDDER_ADMIN_PASSWORD=password
+  d-transformer:
+    image: rudderlabs/rudder-transformer:latest
+    ports:
+      - "9090:9090"
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+      # - "3004:8888"
+      # - "8087:8086"
+      # - "8125:8125/udp"
+    env_file:
+      - build/docker.env
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana-provisioning/:/etc/grafana/provisioning
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=grafana
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - '8086:8086'
+    volumes:
+      - influxdb-storage:/var/lib/influxdb
+    environment:
+      - INFLUXDB_DB=db0
+      - INFLUXDB_ADMIN_USER=influx
+      - INFLUXDB_ADMIN_PASSWORD=influx123
+  chronograf:
+    image: chronograf:latest
+    ports:
+      - '127.0.0.1:8888:8888'
+    volumes:
+      - chronograf-storage:/var/lib/chronograf
+    depends_on:
+      - influxdb
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_USERNAME=influx
+      - INFLUXDB_PASSWORD=influx123
+  telegraf:
+    image: telegraf:latest
+    volumes:
+    - ./telegraf/etc/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - influxdb
+    ports:
+    - '127.0.0.1:8125:8125/udp'
+  dependencies:
+    image: dadarek/wait-for-dependencies
+    depends_on:
+      - grafana
+      - db
+      - d-transformer
+    command: db:5432 grafana:3000 chronograf:8888 influxdb:8086 telegraf:8125 d-transformer:9090
+volumes:
+  influxdb-storage:
+    driver: local
+  grafana-storage:
+    driver: local
+  chronograf-storage:
+    driver: local
